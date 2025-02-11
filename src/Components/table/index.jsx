@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Button,
   Form,
@@ -8,6 +8,8 @@ import {
   Table,
   Typography,
 } from "antd";
+
+import { DataUserContext } from "../../context/sortingcontext";
 import axios from "axios";
 
 const EditableCell = ({
@@ -46,7 +48,7 @@ const EditableCell = ({
 
 const TableCustom = () => {
   const [form] = Form.useForm();
-  const [data, setData] = useState([]);
+  const [data1, setData] = useState([]);
   const [editingKey, setEditingKey] = useState("");
   const isEditing = (record) => record.key === editingKey;
 
@@ -67,7 +69,7 @@ const TableCustom = () => {
   const save = async (key) => {
     try {
       const row = await form.validateFields();
-      const newData = [...data];
+      const newData = [...data1];
       const index = newData.findIndex((item) => key === item.key);
       if (index > -1) {
         const item = newData[index];
@@ -82,28 +84,24 @@ const TableCustom = () => {
         setData(newData);
         setEditingKey("");
       }
-    } catch (errInfo) {
-      console.log("Validate Failed:", errInfo);
-    }
+    } catch (errInfo) {}
   };
-
-  useEffect(() => {
-    axios
-      .get("https://67a74d5e203008941f673347.mockapi.io/userdata")
-      .then((response) => creatingData(response.data));
-  }, []);
-
-  function creatingData(params) {
-    let originaldata = params.map((value, i) => ({
-      key: `${i + 1}.${value.name}`,
-      name: `${i + 1}.${value.name}`,
+  const { state } = useContext(DataUserContext);
+  const creatingData = (state) => {
+    const originalData = state.filteredData.reverse().map((value) => ({
+      key: value.id,
+      name: value.name,
       age: value.age,
       address: value.address,
       status: value.status,
     }));
 
-    setData(originaldata);
-  }
+    setData(originalData);
+  };
+
+  useEffect(() => {
+    creatingData(state);
+  }, [state]);
 
   const columns = [
     {
@@ -135,7 +133,14 @@ const TableCustom = () => {
       dataIndex: "operation",
       render: (_, record) => {
         const handleDelete = (key) => {
-          const newData = data.filter((item) => item.key !== key);
+          console.log(key);
+
+          const newData = data1.filter((item) => item.key !== key);
+          axios
+            .delete(
+              `https://67a74d5e203008941f673347.mockapi.io/userdata/${key}`
+            )
+            .then((data) => console.log(data));
           setData(newData);
         };
         const editable = isEditing(record);
@@ -196,7 +201,7 @@ const TableCustom = () => {
           },
         }}
         bordered
-        dataSource={data}
+        dataSource={data1}
         columns={mergedColumns}
         rowClassName="editable-row"
         pagination={{

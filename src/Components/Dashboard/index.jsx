@@ -1,10 +1,7 @@
 import React, { useContext, useState } from "react";
 import {
-  HomeOutlined,
-  MailOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  ProductOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { IoHomeOutline } from "react-icons/io5";
@@ -13,17 +10,78 @@ import { BsBoxSeam } from "react-icons/bs";
 import { GoPeople } from "react-icons/go";
 import { LuChartLine } from "react-icons/lu";
 import { CiSettings } from "react-icons/ci";
-import { Link, Navigate, Outlet } from "react-router-dom";
-import { Button, Input, Layout, Menu, Segmented, theme } from "antd";
+import { Link, Outlet } from "react-router-dom";
+import {
+  Button,
+  Input,
+  Layout,
+  Menu,
+  Modal,
+  Segmented,
+  Select,
+  theme,
+} from "antd";
 
 import { CgAdd } from "react-icons/cg";
 import { DataUserContext } from "../../context/sortingcontext";
-
+import axios from "axios";
 const { Header, Sider, Content } = Layout;
 const Dashboard = () => {
-  const { dispatch } = useContext(DataUserContext);
+  const { state, dispatch } = useContext(DataUserContext);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inputValue, setInputValue] = useState({
+    name: "",
+    address: "",
+    age: "",
+    status: "",
+  });
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleOk = () => {
+    const newUser = {
+      name: inputValue.name,
+      address: inputValue.address,
+      age: inputValue.age,
+      status: inputValue.status,
+    };
+
+    axios
+      .post("https://67a74d5e203008941f673347.mockapi.io/userdata", newUser)
+      .then((response) => {
+        // Formani tozalash
+        document.getElementById("ageInput").value = "";
+        document.getElementById("statusSelect").selectedIndex = 0;
+
+        setInputValue({
+          name: "",
+          address: "",
+          age: "",
+          status: "",
+        });
+        window.location.reload();
+        setIsModalOpen(false);
+      })
+      .catch((error) => {
+        console.error("Error adding user:", error);
+      });
+  };
+
+  const handleTheUserInfo = (e) => {
+    setInputValue({
+      ...inputValue,
+      [e.target.name]: e.target.value,
+    });
+  };
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
+
   const [collapsed, setCollapsed] = useState(false);
-  const onSearch = (value, _e, info) => console.log(info?.source, value);
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -95,11 +153,7 @@ const Dashboard = () => {
                 style={{ width: 200, marginRight: 8 }}
                 onPressEnter={(e) => onSearch(e.target.value)}
               />
-              <Button
-                shape="circle"
-                icon={<UserOutlined />}
-                onClick={() => console.log("User icon clicked")}
-              />
+              <Button shape="circle" icon={<UserOutlined />} />
             </div>
           </div>
         </Header>
@@ -113,16 +167,57 @@ const Dashboard = () => {
               borderRadius: borderRadiusLG,
             }}
             className="px-5"
-            options={["all", "active", "draft", "archieved"]}
-            onChange={(value) => dispatch({ type: "sorted", payload: value })}
+            options={["all", "active", "draft", "archived"]}
+            onChange={(value) => dispatch({ type: "FILTER", payload: value })}
           />
           <Button
             color="default"
             variant="solid"
             className="mx-[20px]"
+            onClick={showModal}
             icon={<CgAdd className="text-xl" />}>
             Add Product
           </Button>
+          <Modal
+            title="Antd Modal"
+            open={isModalOpen}
+            onOk={handleOk}
+            onCancel={handleCancel}
+            okText="Submit">
+            <Input
+              name="name"
+              value={inputValue.name}
+              onChange={(e) => handleTheUserInfo(e)}
+              placeholder="Name"
+              style={{ marginBottom: 8 }}
+            />
+            <Input
+              name="address"
+              id="ageInput"
+              value={inputValue.address}
+              onChange={(e) => handleTheUserInfo(e)}
+              placeholder="Address"
+              style={{ marginBottom: 8 }}
+            />
+            <Input
+              name="age"
+              onChange={(e) => handleTheUserInfo(e)}
+              placeholder="Age"
+              type="number"
+              style={{ marginBottom: 8 }}
+            />
+            <Select
+              id="statusSelect"
+              onChange={(value) =>
+                setInputValue({ ...inputValue, status: value })
+              }
+              placeholder="Status"
+              style={{ width: "100%" }}>
+              <Select.Option value="active">active</Select.Option>
+              <Select.Option value="draft">draft</Select.Option>
+              <Select.Option value="archived">archived</Select.Option>
+            </Select>
+          </Modal>
         </section>
 
         <Content
